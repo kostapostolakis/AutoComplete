@@ -165,18 +165,21 @@ class ViewController: UIViewController {
         }
 
         let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
-            if error != nil {
-                // Do nothing in error
-            } else if let data = data {
-                let suggestions = self.transformDataToSuggestions(data: data)
-                self.showAutoCompleteList(suggestions: suggestions)
-                
-                // Save the results to a map for not calling the API again with the same words
-                self.placesMap[parameterText] = suggestions
+            // We do not need to handle the error. Just do not show anything
+            if let data = data, error == nil {
+                self.handleSuccess(parameterText: parameterText, data: data)
             }
         }
 
         task.resume()
+    }
+    
+    private func handleSuccess(parameterText: String, data: Data) {
+        let suggestions = self.transformDataToSuggestions(data: data)
+        self.showAutoCompleteList(suggestions: suggestions)
+        
+        // Save the results to a map for not calling the API again with the same words
+        self.placesMap[parameterText] = suggestions
     }
     
     private func transformDataToSuggestions(data: Data) -> [String] {
