@@ -45,6 +45,7 @@ class ViewController: UIViewController {
     // MARK: - Keyboard functions
     
     private func setupKeyboardDisappearing() {
+        // Add gesture to dissapear the keyboard when the user taps outside of it
         let tap = UITapGestureRecognizer(target: self, action: #selector(UIInputViewController.dismissKeyboard))
         view.addGestureRecognizer(tap)
     }
@@ -63,6 +64,7 @@ class ViewController: UIViewController {
         
         locationTextField.addTarget(self, action: #selector(textFieldDidChange), for:.editingChanged)
         
+        // This is for the customization of autocomplete suggestions menu
         locationTextField.theme.font = UIFont.systemFont(ofSize: 16)
         locationTextField.theme.bgColor = UIColor.darkGray
         locationTextField.theme.fontColor = UIColor.white
@@ -73,11 +75,15 @@ class ViewController: UIViewController {
     @objc func textFieldDidChange() {
         let locationText = locationTextField.text ?? ""
         if locationText.count >= 3 {
+            // If we have already searched for this keyword, do not search again. Just get it from the map
             if let suggestionsFromMap = placesMap[locationText] {
                 showAutoCompleteList(suggestions: suggestionsFromMap)
             } else {
                 callAutocompleteAPI(withParameterText: locationText)
             }
+        } else {
+            // If we have less than 3 letters, clear the suggestions to not show them
+            locationTextField.filterStrings([])
         }
      }
     
@@ -89,11 +95,14 @@ class ViewController: UIViewController {
     }
     
     private func showAutoCompleteList(suggestions: [String]) {
-        locationTextField.filterStrings(suggestions)
-        
-        locationTextField.itemSelectionHandler = { filteredResults, itemPosition in
-            let item = filteredResults[itemPosition]
-            self.locationTextField.text = item.title
+        // Run to main thread due to bug appeared
+        DispatchQueue.main.async {
+            self.locationTextField.filterStrings(suggestions)
+            
+            self.locationTextField.itemSelectionHandler = { filteredResults, itemPosition in
+                let item = filteredResults[itemPosition]
+                self.locationTextField.text = item.title
+            }
         }
     }
     
@@ -124,6 +133,7 @@ class ViewController: UIViewController {
     }
     
     private func locationExistsInMap(locationText: String) -> Bool {
+        // Search in all elements of the map and if it exists in an array, return true
         for mapElement in placesMap {
             if mapElement.value.first(where: { $0 == locationText }) != nil {
                 return true
@@ -156,14 +166,13 @@ class ViewController: UIViewController {
 
         let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
             if error != nil {
-                
+                // Do nothing in error
             } else if let data = data {
                 let suggestions = self.transformDataToSuggestions(data: data)
                 self.showAutoCompleteList(suggestions: suggestions)
                 
+                // Save the results to a map for not calling the API again with the same words
                 self.placesMap[parameterText] = suggestions
-                
-                print(String(data: data, encoding: .utf8)!)
             }
         }
 
@@ -188,12 +197,14 @@ class ViewController: UIViewController {
 
 extension ViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        // Add action to dissapear the keyboard when the user taps to "Done" button of it
         dismissKeyboard()
         return true
     }
 }
 
 extension Data {
+    // Use this function (yes, from google search!) to beautify the json we show on screen.
     var prettyPrintedJSONString: NSString? {
         guard let object = try? JSONSerialization.jsonObject(with: self, options: []),
               let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
