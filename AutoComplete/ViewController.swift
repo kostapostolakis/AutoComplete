@@ -62,6 +62,12 @@ class ViewController: UIViewController {
         descriptionTextField.delegate = self
         
         locationTextField.addTarget(self, action: #selector(textFieldDidChange), for:.editingChanged)
+        
+        locationTextField.theme.font = UIFont.systemFont(ofSize: 16)
+        locationTextField.theme.bgColor = UIColor.darkGray
+        locationTextField.theme.fontColor = UIColor.white
+        locationTextField.theme.separatorColor = UIColor (red: 0.9, green: 0.9, blue: 0.9, alpha: 0.5)
+        locationTextField.theme.cellHeight = 50
     }
     
     @objc func textFieldDidChange() {
